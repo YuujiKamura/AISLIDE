@@ -44,6 +44,7 @@ type Zone struct {
 	Ends    map[string]int  `json:"ends,omitempty"` // 端名 -> Path の index（0 か len-1）
 	Exclude [][2][2]float64 `json:"exclude,omitempty"`
 	From    string          `json:"from,omitempty"` // adopt 元の objectId（人の線）
+	Flag    [2]float64      `json:"flag,omitempty"` // 旗揚げ（L=…m）の人の手直し（紙面 mm の dx,dy、P4）
 }
 
 // Part: アンカー相対の部品（THEORY P2, P4）。
