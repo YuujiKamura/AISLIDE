@@ -1,0 +1,300 @@
+[
+  {
+    "createShape": {
+      "elementProperties": {
+        "pageObjectId": "p1",
+        "size": {
+          "height": {
+            "magnitude": 288000,
+            "unit": "EMU"
+          },
+          "width": {
+            "magnitude": 288000,
+            "unit": "EMU"
+          }
+        },
+        "transform": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "translateX": 3600000,
+          "translateY": 2880000,
+          "unit": "EMU"
+        }
+      },
+      "objectId": "kc_sites_0000000a",
+      "shapeType": "ELLIPSE"
+    }
+  },
+  {
+    "updateShapeProperties": {
+      "fields": "shapeBackgroundFill,outline,contentAlignment",
+      "objectId": "kc_sites_0000000a",
+      "shapeProperties": {
+        "contentAlignment": "MIDDLE",
+        "outline": {
+          "propertyState": "NOT_RENDERED"
+        },
+        "shapeBackgroundFill": {
+          "solidFill": {
+            "color": {
+              "rgbColor": {
+                "blue": 0,
+                "green": 0,
+                "red": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "insertText": {
+      "insertionIndex": 0,
+      "objectId": "kc_sites_0000000a",
+      "text": "2"
+    }
+  },
+  {
+    "updateTextStyle": {
+      "fields": "fontSize,bold,foregroundColor,fontFamily",
+      "objectId": "kc_sites_0000000a",
+      "style": {
+        "bold": true,
+        "fontFamily": "Meiryo UI",
+        "fontSize": {
+          "magnitude": 10,
+          "unit": "PT"
+        },
+        "foregroundColor": {
+          "opaqueColor": {
+            "rgbColor": {
+              "blue": 1,
+              "green": 1,
+              "red": 1
+            }
+          }
+        }
+      },
+      "textRange": {
+        "type": "ALL"
+      }
+    }
+  },
+  {
+    "updateParagraphStyle": {
+      "fields": "alignment",
+      "objectId": "kc_sites_0000000a",
+      "style": {
+        "alignment": "CENTER"
+      },
+      "textRange": {
+        "type": "ALL"
+      }
+    }
+  },
+  {
+    "updatePageElementAltText": {
+      "description": "kisei:{\"layer\":\"sites\",\"owner\":\"a1\",\"kind\":\"site\",\"params\":{\"at\":\"32.7,130.7\",\"n\":2}}",
+      "objectId": "kc_sites_0000000a"
+    }
+  },
+  {
+    "createShape": {
+      "elementProperties": {
+        "pageObjectId": "p1",
+        "size": {
+          "height": {
+            "magnitude": 216000,
+            "unit": "EMU"
+          },
+          "width": {
+            "magnitude": 1440000,
+            "unit": "EMU"
+          }
+        },
+        "transform": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "translateX": 360000,
+          "translateY": 360000,
+          "unit": "EMU"
+        }
+      },
+      "objectId": "kc_note_0000000b",
+      "shapeType": "RECTANGLE"
+    }
+  },
+  {
+    "updateShapeProperties": {
+      "fields": "shapeBackgroundFill,outline",
+      "objectId": "kc_note_0000000b",
+      "shapeProperties": {
+        "outline": {
+          "outlineFill": {
+            "solidFill": {
+              "color": {
+                "rgbColor": {
+                  "blue": 0,
+                  "green": 0,
+                  "red": 1
+                }
+              }
+            }
+          },
+          "weight": {
+            "magnitude": 1.5,
+            "unit": "PT"
+          }
+        },
+        "shapeBackgroundFill": {
+          "propertyState": "NOT_RENDERED"
+        }
+      }
+    }
+  },
+  {
+    "createLine": {
+      "elementProperties": {
+        "pageObjectId": "p1",
+        "size": {
+          "height": {
+            "magnitude": 1080000,
+            "unit": "EMU"
+          },
+          "width": {
+            "magnitude": 1800000,
+            "unit": "EMU"
+          }
+        },
+        "transform": {
+          "scaleX": -1,
+          "scaleY": 1,
+          "shearX": 0,
+          "shearY": 0,
+          "translateX": 7200000,
+          "translateY": 3600000,
+          "unit": "EMU"
+        }
+      },
+      "lineCategory": "STRAIGHT",
+      "objectId": "kc_closure_0000000c"
+    }
+  },
+  {
+    "updateLineProperties": {
+      "fields": "lineFill,weight,dashStyle",
+      "lineProperties": {
+        "dashStyle": "SOLID",
+        "lineFill": {
+          "solidFill": {
+            "color": {
+              "rgbColor": {
+                "blue": 0,
+                "green": 0,
+                "red": 1
+              }
+            }
+          }
+        },
+        "weight": {
+          "magnitude": 4,
+          "unit": "PT"
+        }
+      },
+      "objectId": "kc_closure_0000000c"
+    }
+  },
+  {
+    "updatePageElementAltText": {
+      "description": "kisei:{\"layer\":\"closure\",\"kind\":\"closure\"}",
+      "objectId": "kc_closure_0000000c"
+    }
+  },
+  {
+    "duplicateObject": {
+      "objectId": "legend_img",
+      "objectIds": {
+        "legend_img": "kc_signs_0000000d"
+      }
+    }
+  },
+  {
+    "updatePageElementTransform": {
+      "applyMode": "ABSOLUTE",
+      "objectId": "kc_signs_0000000d",
+      "transform": {
+        "scaleX": 0.6,
+        "scaleY": 0.6,
+        "shearX": 0,
+        "shearY": 0,
+        "translateX": 10800000,
+        "translateY": 7200000,
+        "unit": "EMU"
+      }
+    }
+  },
+  {
+    "updatePageElementAltText": {
+      "description": "kisei:{\"layer\":\"signs\",\"owner\":\"a1\",\"kind\":\"sign\",\"params\":{\"key\":\"①\"}}",
+      "objectId": "kc_signs_0000000d"
+    }
+  },
+  {
+    "updatePageElementTransform": {
+      "applyMode": "ABSOLUTE",
+      "objectId": "kc_note_00000001",
+      "transform": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "shearX": 0,
+        "shearY": 0,
+        "translateX": 2160000,
+        "translateY": 1980000,
+        "unit": "EMU"
+      }
+    }
+  },
+  {
+    "deleteText": {
+      "objectId": "kc_note_00000001",
+      "textRange": {
+        "type": "ALL"
+      }
+    }
+  },
+  {
+    "insertText": {
+      "insertionIndex": 0,
+      "objectId": "kc_note_00000001",
+      "text": "新しい注記"
+    }
+  },
+  {
+    "insertText": {
+      "insertionIndex": 0,
+      "objectId": "kc_note_00000002",
+      "text": "空から"
+    }
+  },
+  {
+    "updatePageElementAltText": {
+      "description": "kisei:{\"layer\":\"detour\",\"owner\":\"a1\",\"kind\":\"detour\"}",
+      "objectId": "human_line"
+    }
+  },
+  {
+    "updatePageElementsZOrder": {
+      "operation": "SEND_TO_BACK",
+      "pageElementObjectIds": [
+        "kc_map_mask_1",
+        "p1_i4"
+      ]
+    }
+  },
+  {
+    "deleteObject": {
+      "objectId": "kc_note_00000002"
+    }
+  }
+]
