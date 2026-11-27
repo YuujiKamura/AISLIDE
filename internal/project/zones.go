@@ -12,6 +12,12 @@ import (
 	"github.com/YuujiKamura/AISLIDE/internal/zone"
 )
 
+// zones / parts は Default()（cp の project・legend・zone・set コマンドが走らせる全 Projector）に入る。
+func init() {
+	Register(Zones{})
+	Register(Parts{})
+}
+
 // DriftRecorder: Drift を manifest の上書き（Override / Zone.Flag）に記録できる Projector（P4）。
 // Run の呼び出し側（sync / project / zone・set コマンド）が、Run の返す Drift を自分の unit を
 // 持つ Projector に渡す。記録したら true。
@@ -71,10 +77,6 @@ func sortedKeys[V any](m map[string]V) []string {
 	return ks
 }
 
-func derivedTag(unit, role string) *model.Tag {
-	return &model.Tag{Layer: LayerDerived, Kind: role, Params: map[string]any{"unit": unit, "role": role}}
-}
-
 func lineBox(x1, y1, x2, y2 float64) model.Box {
 	return model.Box{X: math.Min(x1, x2), Y: math.Min(y1, y2), W: math.Abs(x2 - x1), H: math.Abs(y2 - y1)}
 }
@@ -83,7 +85,7 @@ func (p Zones) lineSpec(unit, role string, x1, y1, x2, y2 float64, st model.Line
 	id := p.id(unit, role)
 	return Spec{ID: id, Unit: unit, Role: role, Box: lineBox(x1, y1, x2, y2),
 		Create: []model.Op{{Kind: model.OpCreateLine, ObjectID: id, X1: x1, Y1: y1, X2: x2, Y2: y2,
-			Line: &st, Tag: derivedTag(unit, role)}}}
+			Line: &st, Tag: DerivedTag(unit, role)}}}
 }
 
 // FlagText: 旗揚げの文字。
@@ -208,7 +210,7 @@ func (p Zones) Project(m *manifest.Manifest, d *model.Deck) ([]Spec, error) {
 		id := p.id(name, "flag_text")
 		txt := FlagText(L)
 		specs = append(specs, Spec{ID: id, Unit: name, Role: "flag_text", Box: g.Text, Text: txt, Movable: true,
-			Create: []model.Op{{Kind: model.OpCreateShape, ObjectID: id, Box: g.Text, Tag: derivedTag(name, "flag_text"),
+			Create: []model.Op{{Kind: model.OpCreateShape, ObjectID: id, Box: g.Text, Tag: DerivedTag(name, "flag_text"),
 				Shape: &model.ShapeStyle{ShapeType: "RECTANGLE", Text: txt, FontPt: FlagFontPt,
 					FontColor: colorBlack, Bold: true, AlignCenter: true}}}})
 	}

@@ -93,6 +93,13 @@ func BadgeNumber(m *manifest.Manifest, key rune) int {
 	return orig
 }
 
+// signTag: 看板の派生タグ。元の凡例画像を持たせ、削除の undo で複製し直せるようにする（journal.recreate）。
+func signTag(unit, src string) *model.Tag {
+	t := DerivedTag(unit, "sign")
+	t.Params[model.ParamSource] = src
+	return t
+}
+
 func circleOp(id string, cx, cy, dia float64, st model.ShapeStyle, tag *model.Tag) model.Op {
 	st.ShapeType = "ELLIPSE"
 	return model.Op{Kind: model.OpCreateShape, ObjectID: id, Box: model.Box{X: cx - dia/2, Y: cy - dia/2, W: dia, H: dia}, Shape: &st, Tag: tag}
@@ -140,10 +147,10 @@ func (p Parts) Project(m *manifest.Manifest, d *model.Deck) ([]Spec, error) {
 			num := strconv.Itoa(BadgeNumber(m, r))
 			specs = append(specs,
 				Spec{ID: sid, Unit: unit, Role: "sign", Box: box, Movable: true,
-					Create: []model.Op{{Kind: model.OpDuplicate, ObjectID: sid, SourceID: src.ObjectID, Box: box, Tag: derivedTag(unit, "sign")}}},
+					Create: []model.Op{{Kind: model.OpDuplicate, ObjectID: sid, SourceID: src.ObjectID, Box: box, Tag: signTag(unit, src.ObjectID)}}},
 				Spec{ID: bid, Unit: unit, Role: "badge", Box: model.Box{X: bx - dia/2, Y: by - dia/2, W: dia, H: dia}, Text: num,
 					Create: []model.Op{circleOp(bid, bx, by, dia, model.ShapeStyle{Fill: &red, Outline: &white, OutlinePt: 0.75,
-						Text: num, FontPt: parts.SignBadgeFontPt, FontColor: white, Bold: true, AlignCenter: true}, derivedTag(unit, "badge"))}})
+						Text: num, FontPt: parts.SignBadgeFontPt, FontColor: white, Bold: true, AlignCenter: true}, DerivedTag(unit, "badge"))}})
 		case "guard":
 			k := strings.ToUpper(strings.TrimSpace(pt.Key))
 			if k == "" {
@@ -156,7 +163,7 @@ func (p Parts) Project(m *manifest.Manifest, d *model.Deck) ([]Spec, error) {
 			specs = append(specs, Spec{ID: gid, Unit: unit, Role: "guard", Box: model.Box{X: x - dia/2, Y: y - dia/2, W: dia, H: dia},
 				Text: k, Movable: true,
 				Create: []model.Op{circleOp(gid, x, y, dia, model.ShapeStyle{Fill: &blue, Text: k, FontPt: parts.GuardFontPt,
-					FontColor: white, Bold: true, AlignCenter: true}, derivedTag(unit, "guard"))}})
+					FontColor: white, Bold: true, AlignCenter: true}, DerivedTag(unit, "guard"))}})
 		default:
 			return nil, fmt.Errorf("part %s: kind %q not supported (sign | guard)", unit, pt.Kind)
 		}

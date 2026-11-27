@@ -54,6 +54,12 @@ func Inverse(ops []model.Op, before *model.Deck) ([]model.Op, error) {
 				return s, nil
 			}
 		}
+		// スピーカーノートの本文 shape（Elements に無い）。set_text の逆（元の文字）だけを作れる。
+		if id != "" && id == before.NotesID {
+			s := &shadow{el: model.Element{ObjectID: id, Kind: "notes", Text: before.NotesText}}
+			state[id] = s
+			return s, nil
+		}
 		return nil, fmt.Errorf("%s: %w", id, model.ErrNotFound)
 	}
 
@@ -132,6 +138,11 @@ func recreate(e *model.Element) (model.Op, error) {
 		ls := *e.Line
 		x1, y1, x2, y2 := e.LineEnds()
 		return model.Op{Kind: model.OpCreateLine, ObjectID: e.ObjectID, X1: x1, Y1: y1, X2: x2, Y2: y2, Line: &ls, Tag: cloneTag(e.Tag)}, nil
+	case e.Kind == "image" && e.Tag != nil:
+		// 複製で作った画像（派生の看板など）は Tag.Params[model.ParamSource] の元画像から複製し直す。
+		if src, _ := e.Tag.Params[model.ParamSource].(string); src != "" {
+			return model.Op{Kind: model.OpDuplicate, ObjectID: e.ObjectID, SourceID: src, Box: e.Box, Tag: cloneTag(e.Tag)}, nil
+		}
 	}
 	return model.Op{}, fmt.Errorf("delete %s (%s) cannot be undone: %w", e.ObjectID, e.Kind, ErrIrreversible)
 }

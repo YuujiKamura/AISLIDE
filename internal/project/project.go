@@ -16,7 +16,7 @@ import (
 )
 
 // LayerDerived: 投影エンジンだけが書く層（agent の claim 不可、人の手直しは Drift として拾う）。
-const LayerDerived = "derived"
+const LayerDerived = model.LayerDerived
 
 type Spec struct {
 	ID     string     // ID(unit, role)
@@ -27,6 +27,9 @@ type Spec struct {
 	Create []model.Op // 無いときに作る Op 列（Tag 付き、ObjectID=ID）
 	// Movable: 人が動かしてよい要素（看板など）。true のとき位置ずれは上書きせず Drift として報告する。
 	Movable bool
+	// Base: ID は既存の base 要素（凡例ラベル等）。Run は Text だけを合わせ、作成・移動・削除はしない
+	// （要素が無ければ error）。凡例の番号詰め（THEORY P8）のための唯一の base への書込み口。
+	Base bool
 }
 
 type Projector interface {
@@ -42,10 +45,4 @@ type Drift struct {
 	DX, DY float64
 }
 
-// ID: unit と role から決定的な objectId（Slides の objectId 制約: 5..50 文字, [a-zA-Z0-9_-:]）。
-func ID(unit, role string) string { panic("TODO") }
-
-// Run: 全 Projector を走らせ、差分 Op 列と Drift を返す。純関数。
-func Run(m *manifest.Manifest, d *model.Deck, ps []Projector) ([]model.Op, []Drift, error) {
-	panic("TODO")
-}
+// ID（決定的 objectId）と Run（差分）の実装は run.go。

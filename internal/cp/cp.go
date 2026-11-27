@@ -97,7 +97,6 @@ type Server struct {
 	raw    []byte
 	owners map[string]string // layer -> agent。再読込のたびに Deck.Owners へ戻す
 	pickID string            // pick 中の要素 objectId（"" = なし）
-	zx     zoneExt           // zone / set / part nudge の依存（zone_cmds.go）
 }
 
 // New: backend と journal を束ねた Server。
@@ -167,7 +166,9 @@ func init() {
 		"drc":     (*Server).cmdDRC,
 		"georef":  (*Server).cmdGeoref,
 	}
-	registerZoneCmds(handlers)
+	for verb, h := range extraHandlers { // 別ファイルで registerHandlers したもの（registry.go）
+		handlers[verb] = h
+	}
 }
 
 // ---- デッキ読込 ----

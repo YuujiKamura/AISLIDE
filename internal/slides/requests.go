@@ -80,6 +80,13 @@ func newState(d *model.Deck) state {
 		e := &d.Elements[i]
 		s[e.ObjectID] = &known{sizeEMU: e.SizeEMU, flip: e.Flip, hasText: e.Text != ""}
 	}
+	// スピーカーノートの本文 shape（ノートページ上にあり Elements には無い）。set_text / delete のみ可
+	// （寸法不明なので transform は absTransform が拒否する）。
+	if d.NotesID != "" {
+		if _, dup := s[d.NotesID]; !dup {
+			s[d.NotesID] = &known{hasText: d.NotesText != ""}
+		}
+	}
 	return s
 }
 

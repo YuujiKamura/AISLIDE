@@ -24,11 +24,13 @@ const (
 	LayerBase   = "base"
 	LayerCursor = "_cursor"
 	LayerMap    = "map"
+	// LayerDerived: 投影エンジン（internal/project）だけが書く層。agent は claim・書込みできない。
+	LayerDerived = "derived"
 )
 
 // IsReservedLayer: agent が claim できないレイヤ。
 func IsReservedLayer(layer string) bool {
-	return layer == LayerBase || layer == LayerCursor || layer == LayerMap
+	return layer == LayerBase || layer == LayerCursor || layer == LayerMap || layer == LayerDerived
 }
 
 // LegacyMaskPrefix: 旧 python 試作のマスク図形（タグ無しでも layer "map" kind "mask" とみなす）。
@@ -88,6 +90,11 @@ type Deck struct {
 	PageH    float64
 	Elements []Element
 	Owners   map[string]string // layer -> agent（claim 情報。デッキ再読込でも保持するため cp 側で引き継ぐ）
+
+	// スピーカーノート（manifest の保存先、THEORY P1）。NotesID はノートページ上の本文 shape の
+	// objectId（Elements には含まれない）。NotesText はその文字（末尾の改行を除く）。無ければ共に ""。
+	NotesID   string
+	NotesText string
 }
 
 // ---- presentations.get の最小構造 ----
@@ -200,8 +207,16 @@ type rawPresentation struct {
 		Height *rawDim `json:"height"`
 	} `json:"pageSize"`
 	Slides []struct {
-		ObjectID     string           `json:"objectId"`
-		PageElements []rawPageElement `json:"pageElements"`
+		ObjectID        string           `json:"objectId"`
+		PageElements    []rawPageElement `json:"pageElements"`
+		SlideProperties *struct {
+			NotesPage *struct {
+				NotesProperties *struct {
+					SpeakerNotesObjectID string `json:"speakerNotesObjectId"`
+				} `json:"notesProperties"`
+				PageElements []rawPageElement `json:"pageElements"`
+			} `json:"notesPage"`
+		} `json:"slideProperties"`
 	} `json:"slides"`
 }
 
@@ -231,7 +246,30 @@ func ParseDeck(raw []byte, slideNo int) (*Deck, error) {
 	for i, re := range s.PageElements {
 		d.Elements = append(d.Elements, parseElement(i, &re))
 	}
+	if sp := s.SlideProperties; sp != nil && sp.NotesPage != nil && sp.NotesPage.NotesProperties != nil {
+		np := sp.NotesPage
+		d.NotesID = np.NotesProperties.SpeakerNotesObjectID
+		for i := range np.PageElements {
+			if re := &np.PageElements[i]; re.ObjectID == d.NotesID {
+				d.NotesText = rawText(re)
+			}
+		}
+	}
 	return d, nil
+}
+
+// rawText: shape の textRun をそのまま連結し、末尾の改行だけ除く（Slides は必ず末尾に "\n" を持つ）。
+func rawText(re *rawPageElement) string {
+	if re.Shape == nil || re.Shape.Text == nil {
+		return ""
+	}
+	var b strings.Builder
+	for _, te := range re.Shape.Text.TextElements {
+		if te.TextRun != nil {
+			b.WriteString(te.TextRun.Content)
+		}
+	}
+	return strings.TrimRight(b.String(), "\n")
 }
 
 func parseElement(i int, re *rawPageElement) Element {

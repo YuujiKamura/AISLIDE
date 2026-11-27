@@ -2,7 +2,6 @@ package project
 
 import (
 	"math"
-	"os"
 	"regexp"
 	"testing"
 
@@ -13,19 +12,6 @@ import (
 
 // testID: ID（別担当で実装中）の代わりの決定的な ID。
 func testID(unit, role string) string { return "kd_" + unit + "_" + role }
-
-func akitsu(t *testing.T) *model.Deck {
-	t.Helper()
-	raw, err := os.ReadFile("../../testdata/akitsu_presentation.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	d, err := model.ParseDeck(raw, 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return d
-}
 
 func near(a, b, tol float64) bool { return math.Abs(a-b) <= tol }
 

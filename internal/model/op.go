@@ -5,14 +5,14 @@ package model
 type OpKind string
 
 const (
-	OpCreateShape  OpKind = "create_shape"  // 矩形・楕円＋任意の文字
-	OpCreateLine   OpKind = "create_line"   // 直線 1 本（X1,Y1 → X2,Y2）
-	OpDuplicate    OpKind = "duplicate"     // SourceID を複製し Box に置く（凡例の看板画像など）
-	OpTransform    OpKind = "transform"     // TargetID を Box（絶対位置・寸法）へ
-	OpSetText      OpKind = "set_text"      // TargetID の文字を丸ごと Text に
-	OpDelete       OpKind = "delete"        // TargetID を削除
-	OpSetTag       OpKind = "set_tag"       // TargetID の description に Tag を書く
-	OpZOrderBack   OpKind = "zorder_back"   // TargetIDs を最背面へ（与えた順に重ねる）
+	OpCreateShape OpKind = "create_shape" // 矩形・楕円＋任意の文字
+	OpCreateLine  OpKind = "create_line"  // 直線 1 本（X1,Y1 → X2,Y2）
+	OpDuplicate   OpKind = "duplicate"    // SourceID を複製し Box に置く（凡例の看板画像など）
+	OpTransform   OpKind = "transform"    // TargetID を Box（絶対位置・寸法）へ
+	OpSetText     OpKind = "set_text"     // TargetID の文字を丸ごと Text に
+	OpDelete      OpKind = "delete"       // TargetID を削除
+	OpSetTag      OpKind = "set_tag"      // TargetID の description に Tag を書く
+	OpZOrderBack  OpKind = "zorder_back"  // TargetIDs を最背面へ（与えた順に重ねる）
 )
 
 type RGB struct{ R, G, B float64 }
@@ -69,4 +69,7 @@ type GeorefTag struct {
 }
 
 const TagPrefix = "kisei:"
+
+// ParamSource: OpDuplicate で作った要素の Tag.Params に元の objectId を入れるキー（削除の undo＝複製し直し）。
+const ParamSource = "src"
 const LegacyGeorefPrefix = "kisei_live:" // 旧 python 試作の georef（{"z","center","px","sites"}）

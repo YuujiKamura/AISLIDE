@@ -8,7 +8,7 @@ package cp
 //	set <Z.end.set> on|off [agent=<id>]                 例: set Z1.E.予告 off
 //	part nudge <unit> <dx> <dy> [agent=<id>]            紙面 mm を Override に足す
 //
-// どのコマンドも 1 回の batchUpdate で「manifest の書込み Op ＋ 投影の差分 Op」を書く（undo は 1 単位）。
+// どのコマンドも 1 回の batchUpdate で「ノートの manifest 更新 ＋ 全 Projector の差分 Op」を書く（undo は 1 単位）。
 // 手順: (1) 現在の manifest で投影し、人が動かした Movable 要素の Drift を Override に記録（P4）、
 // (2) 意図を 1 つ変える、(3) 投影し直す。Movable 要素は Run が上書きしないので、(1) で人の分を
 // 取り込んだ上で、あるべき位置（アンカー＋Override）へ OpTransform で付いてこさせる。
@@ -32,93 +32,64 @@ import (
 	"github.com/YuujiKamura/AISLIDE/internal/zone"
 )
 
-// manifestStore: デッキ上の manifest（スピーカーノート）の読み書き。実装は manifest I/O 側が提供し、
-// マージ時に Server.zx.store へ差す。Load は manifest が無ければ (nil, nil) を返してよい。
-type manifestStore interface {
-	Load(d *model.Deck) (*manifest.Manifest, error)
-	WriteOp(d *model.Deck, m *manifest.Manifest) (model.Op, error)
-}
-
-// projectRunner: project.Run と同じ型（テストで差し替える）。
-type projectRunner func(m *manifest.Manifest, d *model.Deck, ps []project.Projector) ([]model.Op, []project.Drift, error)
-
-// zoneExt: zone / set / part nudge コマンドの依存。ゼロ値なら run=project.Run、
-// projectors={zones, parts}。store が nil のときコマンドは ng。
-type zoneExt struct {
-	store      manifestStore
-	run        projectRunner
-	projectors []project.Projector
-}
-
-// registerZoneCmds: dispatcher（cp.go の init）から呼ぶ登録口。
-func registerZoneCmds(h map[string]func(*Server, context.Context, *command) string) {
-	h["zone"] = (*Server).cmdZone
-	h["set"] = (*Server).cmdSet
-	if prev := h["part"]; prev != nil {
-		h["part"] = func(s *Server, ctx context.Context, c *command) string {
-			if len(c.pos) > 0 && c.pos[0] == "nudge" {
-				return s.cmdPartNudge(ctx, c)
-			}
-			return prev(s, ctx, c)
+var _ = registerHandlers(map[string]handlerFunc{
+	"zone": (*Server).cmdZone,
+	"set":  (*Server).cmdSet,
+	// part nudge <unit> …（意図の部品）。それ以外は従来の part <layer> <kind>（agent 部品）。
+	"part": func(s *Server, ctx context.Context, c *command) string {
+		if len(c.pos) > 0 && c.pos[0] == "nudge" {
+			return s.cmdPartNudge(ctx, c)
 		}
-	}
-}
+		return s.cmdPart(ctx, c)
+	},
+})
 
-func (s *Server) zoneEnv() zoneExt {
-	e := s.zx
-	if e.run == nil {
-		e.run = project.Run
-	}
-	if e.projectors == nil {
-		e.projectors = []project.Projector{project.Zones{}, project.Parts{}}
-	}
-	return e
-}
-
-// manifestEdit: (1) drift 記録 → (2) mutate → (3) 投影 → manifest Op と差分 Op を 1 回で書く。
-// mutate は応答の本文（"ok " の後）を返す。
+// manifestEdit: (1) drift 記録 → (2) mutate → (3) 投影（project.Default）→ ノートの manifest 更新と
+// 差分 Op を 1 回の batchUpdate で書く（manifest_cmds.go の commitIntent と同じ書き方に、drift の取り込みと
+// Movable の追従を足したもの）。mutate は応答の本文（"ok " の後）を返す。ops= はノート更新を含む件数。
 func (s *Server) manifestEdit(ctx context.Context, c *command, mutate func(m *manifest.Manifest) (string, error)) string {
-	env := s.zoneEnv()
-	if env.store == nil {
-		return ng(c.verb + ": manifest store not wired")
-	}
-	m, err := env.store.Load(s.deck)
-	if err != nil {
-		return ng(c.verb + ": manifest: " + err.Error())
+	ps := project.Default()
+	m, rest, bad := s.readManifest()
+	if bad != "" {
+		return bad
 	}
 	if m == nil {
-		m = &manifest.Manifest{Version: 1}
+		m = manifest.New()
 	}
 	// (1) 人の手直しを先に意図へ取り込む（区間を変えた後に測ると、アンカーの移動と混ざる）。
-	_, drifts, err := env.run(m, s.deck, env.projectors)
+	_, drifts, err := project.Run(m, s.deck, ps)
 	if err != nil {
 		return ng(c.verb + ": project (before): " + err.Error())
 	}
-	recorded := recordDrifts(m, drifts, env.projectors)
+	recorded := recordDrifts(m, drifts, ps)
 	// (2)
 	msg, err := mutate(m)
 	if err != nil {
 		return ng(c.verb + ": " + err.Error())
 	}
 	// (3)
-	ops, _, err := env.run(m, s.deck, env.projectors)
+	pops, _, err := project.Run(m, s.deck, ps)
 	if err != nil {
 		return ng(c.verb + ": project: " + err.Error())
 	}
-	follow, err := followMovables(m, s.deck, env.projectors, ops)
+	follow, err := followMovables(m, s.deck, ps, pops)
 	if err != nil {
 		return ng(c.verb + ": project: " + err.Error())
 	}
-	mop, err := env.store.WriteOp(s.deck, m)
+	var ops []model.Op
+	mop, changed, err := manifest.WriteOp(s.deck, m, rest)
 	if err != nil {
-		return ng(c.verb + ": manifest write: " + err.Error())
+		return ng("manifest: " + err.Error())
 	}
-	all := append(append([]model.Op{mop}, ops...), follow...)
+	if changed {
+		ops = append(ops, mop)
+	}
+	ops = append(append(ops, pops...), follow...)
 	agent := c.agent()
-	if r := s.write(ctx, all, writeOpts{journalAs: &agent, force: c.kv["force"] == "yes"}); r != "" {
+	if r := s.write(ctx, ops, writeOpts{journalAs: &agent, force: c.kv["force"] == "yes"}); r != "" {
 		return r
 	}
-	out := "ok " + msg + fmt.Sprintf(" ops=%d", len(all)-1)
+	out := "ok " + msg + fmt.Sprintf(" ops=%d", len(ops))
 	if recorded > 0 {
 		out += fmt.Sprintf(" drift=%d", recorded)
 	}

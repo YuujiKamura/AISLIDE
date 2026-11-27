@@ -6,8 +6,92 @@ import (
 
 	"github.com/YuujiKamura/AISLIDE/internal/manifest"
 	"github.com/YuujiKamura/AISLIDE/internal/model"
+	"github.com/YuujiKamura/AISLIDE/internal/slides"
 	"github.com/YuujiKamura/AISLIDE/internal/zone"
 )
+
+// applyAll: apply（project_test.go）に OpDuplicate（看板画像の複製）を足したもの。
+func applyAll(t *testing.T, d *model.Deck, ops []model.Op) {
+	t.Helper()
+	if _, err := slides.ToRequests(ops, d.PageID, d); err != nil {
+		t.Fatalf("ToRequests: %v", err)
+	}
+	var rest []model.Op
+	for _, op := range ops {
+		if op.Kind == model.OpDuplicate {
+			d.Elements = append(d.Elements, model.Element{ObjectID: op.ObjectID, Kind: "image", Box: op.Box, Tag: op.Tag})
+			continue
+		}
+		rest = append(rest, op)
+	}
+	apply(t, d, rest)
+	// 実 Slides は直線の size を下限 0.01mm で作る（slides.lineGeometry）。水平な下線も transform できるように。
+	for i := range d.Elements {
+		for k := range d.Elements[i].SizeEMU {
+			if e := &d.Elements[i]; e.Kind == "line" && e.SizeEMU[k] < 0.01*model.EMUPerMM {
+				e.SizeEMU[k] = 0.01 * model.EMUPerMM
+			}
+		}
+	}
+}
+
+// 実 Run（Default = legend + zones + parts）で投影 → 適用 → 再投影が 0 件（冪等）。区間のないデッキでも error にならない。
+func TestZonesPartsIdempotentWithRun(t *testing.T) {
+	if ops, _, err := Run(manifest.New(), akitsu(t), Default()); err != nil || len(ops) != 0 {
+		t.Fatalf("empty manifest: %v %d ops", err, len(ops))
+	}
+	d, f, m := fr10(t)
+	m.Parts["P1"] = manifest.Part{Kind: "guard", Anchor: "Z1.W", OffsetM: -5, On: true}
+	runApply := func() int {
+		t.Helper()
+		ops, drifts, err := Run(m, d, Default())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(drifts) != 0 {
+			t.Fatalf("drifts %+v", drifts)
+		}
+		applyAll(t, d, ops)
+		again, _, err := Run(m, d, Default())
+		if err != nil || len(again) != 0 {
+			t.Fatalf("not idempotent: %v %+v", err, again)
+		}
+		return len(ops)
+	}
+	if n := runApply(); n != 3+2*2+1 { // 旗揚げ 3、看板＋バッジ ×2、誘導員 1
+		t.Fatalf("first projection %d ops", n)
+	}
+	if e, err := d.Get(ID("Z1.E.予告#1", "sign")); err != nil || e.Kind != "image" {
+		t.Fatalf("sign: %v", err)
+	}
+	// 区間を延ばす: 派生の赤線が増え、旗揚げの線は動く。もう一度で 0 件。
+	z := m.Zones["Z1"]
+	z.Path, _ = zone.Extend(f, z.Path, true, 30)
+	m.Zones["Z1"] = z
+	runApplyMovable := func() {
+		t.Helper()
+		ops, _, err := Run(m, d, Default())
+		if err != nil {
+			t.Fatal(err)
+		}
+		applyAll(t, d, ops)
+	}
+	runApplyMovable() // Movable（旗揚げ文字・E 看板）は Run では動かない（cp が追従させる）ので drift が出る
+	if _, err := d.Get(ID("Z1", "line")); err != nil {
+		t.Fatal("overlay line missing")
+	}
+	// セットを off → 看板とバッジが消える。
+	sw := m.Sets["Z1.W.予告"]
+	sw.On = false
+	m.Sets["Z1.W.予告"] = sw
+	runApplyMovable()
+	if _, err := d.Get(ID("Z1.W.予告#1", "sign")); err == nil {
+		t.Fatal("set off must delete the sign")
+	}
+	if again, _, _ := Run(m, d, Default()); len(again) != 0 {
+		t.Fatalf("not idempotent after extend/off: %+v", again)
+	}
+}
 
 // fr10: 線 36 の Z1 に set apply FR-10 を当てた manifest（凡例キーはデッキの「50m先」ラベルから）。
 func fr10(t *testing.T) (*model.Deck, zone.Frame, *manifest.Manifest) {
