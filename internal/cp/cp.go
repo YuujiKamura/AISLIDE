@@ -166,6 +166,9 @@ func init() {
 		"drc":     (*Server).cmdDRC,
 		"georef":  (*Server).cmdGeoref,
 	}
+	for verb, h := range extraHandlers { // 別ファイルで registerHandlers したもの（registry.go）
+		handlers[verb] = h
+	}
 }
 
 // ---- デッキ読込 ----

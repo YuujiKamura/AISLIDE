@@ -54,6 +54,12 @@ func Inverse(ops []model.Op, before *model.Deck) ([]model.Op, error) {
 				return s, nil
 			}
 		}
+		// スピーカーノートの本文 shape（Elements に無い）。set_text の逆（元の文字）だけを作れる。
+		if id != "" && id == before.NotesID {
+			s := &shadow{el: model.Element{ObjectID: id, Kind: "notes", Text: before.NotesText}}
+			state[id] = s
+			return s, nil
+		}
 		return nil, fmt.Errorf("%s: %w", id, model.ErrNotFound)
 	}
 
